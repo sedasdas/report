@@ -106,7 +106,7 @@ func StartServer(addr string, db *database.SQLiteDB) {
 			}
 			err = db.InsertClientInfo(clientInfo)
 			if err != nil {
-				fmt.Println("insert err :", err.Error())
+				fmt.Println("insert error :", err.Error())
 				return
 			}
 			// 更新客户端信息
