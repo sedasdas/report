@@ -25,7 +25,6 @@ type ClientInfo struct {
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
-
 	log.Println("hand")
 	var clientList []ClientInfo
 	for _, client := range clients {
@@ -56,8 +55,6 @@ func hello(w http.ResponseWriter, r *http.Request) {
 		// 处理 GET 请求
 		w.WriteHeader(http.StatusOK)
 		w.Write(jsonData)
-		//w.Write(jsonData)
-
 	}
 }
 
@@ -71,14 +68,11 @@ func getSystemInfo() string {
 	return strings.TrimSpace(string(output))
 }
 
-func checkLive() {
-
-}
 func checkClientLastUpdated() {
 	for {
-		fmt.Println("checking")
-
+		fmt.Println("Checking client status...")
 		time.Sleep(1 * time.Minute) // 每分钟检查一次
+
 		for ip, client := range clients {
 			// 检查最后更新时间是否超过2分钟
 			if time.Since(client.LastUpdated) > 2*time.Minute {
@@ -93,9 +87,6 @@ func checkClientLastUpdated() {
 
 // 启动服务器
 func startServer(addr string) {
-	//http.HandleFunc("/hello", hello)
-	//http.ListenAndServe(":9999", nil)
-	//clients = make(map[string]ClientInfo)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Println("Error starting server:", err.Error())
@@ -152,7 +143,6 @@ func startServer(addr string) {
 }
 
 // 启动客户端
-
 func startClient(serverAddr string) {
 	// 启动客户端
 	localIP := ""
@@ -208,10 +198,7 @@ func startClient(serverAddr string) {
 	}
 }
 
-// 定义API处理函数
-
 func main() {
-
 	var serverAddr string
 	var isClient bool
 
@@ -227,18 +214,12 @@ func main() {
 	if isClient {
 		startClient(serverAddr)
 	} else {
+		// 创建一个 HTTP 服务器并注册 API 处理函数
+		http.HandleFunc("/hello", hello)
 
-		handler := http.HandlerFunc(hello)
-		// 创建一个 CORS 中间件
-		//c := gocors.New()
-		//c.SetAllowOrigin("*")
-		// 使用 CORS 中间件处理 HTTP 请求
-		//h := c.Handler(handler)
-
-		// 启动 HTTP 服务器
-		go http.ListenAndServe(":9999", handler)
+		// 启动 HTTP 服务器和客户端状态检查
+		go http.ListenAndServe(":9999", nil)
 		go checkClientLastUpdated()
 		startServer(serverAddr)
-
 	}
 }
