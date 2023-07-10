@@ -1,0 +1,124 @@
+package server
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"report/client"
+	"strings"
+	"time"
+)
+
+var clients = make(map[string]client.ClientInfo)
+
+func Hello() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("hand")
+		var clientList []client.ClientInfo
+		for _, client := range clients {
+			clientList = append(clientList, client)
+			log.Print(client)
+		}
+
+		// Encode the client list to JSON
+		jsonData, err := json.Marshal(clientList)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Set the response headers and write the JSON data
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+		// 处理跨域请求
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// 处理其他请求
+		if r.Method == "GET" {
+			// 处理 GET 请求
+			w.WriteHeader(http.StatusOK)
+			w.Write(jsonData)
+		}
+	}
+}
+func CheckClientLastUpdated() {
+	for {
+		fmt.Println("Checking client status...")
+		time.Sleep(1 * time.Minute) // 每分钟检查一次
+
+		for ip, client := range clients {
+			// 检查最后更新时间是否超过2分钟
+			if time.Since(client.LastUpdated) > 2*time.Minute {
+				// 设置客户端状态为离线
+				client.Status = "offline"
+				clients[ip] = client
+				fmt.Println("Set client status to offline:", client)
+			}
+		}
+	}
+}
+
+// 启动服务器
+func StartServer(addr string) {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		fmt.Println("Error starting server:", err.Error())
+		return
+	}
+
+	fmt.Println("Server started, listening on", addr)
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection:", err.Error())
+			continue
+		}
+
+		go func() {
+			defer conn.Close()
+
+			// 读取客户端信息
+			reader := bufio.NewReader(conn)
+			data, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading data:", err.Error())
+				return
+			}
+			data = strings.TrimSpace(data) // 去除额外的换行符
+			fmt.Println("Received data:", data)
+
+			// 解析客户端信息
+			var clientInfo client.ClientInfo
+			err = json.Unmarshal([]byte(data), &clientInfo)
+			if err != nil {
+				fmt.Println("Error decoding JSON:", err.Error())
+				return
+			}
+
+			// 更新客户端信息
+			clientInfo.LastUpdated = time.Now()
+			clients[clientInfo.LocalIP] = clientInfo
+			fmt.Println("Updated client info:", clientInfo)
+
+			// 发送响应
+			response := map[string]interface{}{
+				"status": "ok",
+			}
+			encoder := json.NewEncoder(conn)
+			err = encoder.Encode(response)
+			if err != nil {
+				fmt.Println("Error encoding JSON:", err.Error())
+				return
+			}
+		}()
+	}
+}
