@@ -86,6 +86,7 @@ func loadClients(db *database.SQLiteDB) {
 
 // 启动服务器
 func StartServer(addr string, db *database.SQLiteDB) {
+	loadClients(db)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Println("Error starting server:", err.Error())
