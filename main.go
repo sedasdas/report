@@ -170,14 +170,18 @@ func startClient(serverAddr string) {
 		conn, err := net.Dial("tcp", serverAddr)
 		if err != nil {
 			fmt.Println("Error connecting to server:", err.Error())
-			return
+			// 连接失败时进行重试
+			time.Sleep(10 * time.Second)
+			continue
 		}
 
 		_, err = fmt.Fprintf(conn, string(data)+"\n")
 		if err != nil {
 			fmt.Println("Error sending data:", err.Error())
 			conn.Close()
-			return
+			// 发送数据失败时进行重试
+			time.Sleep(10 * time.Second)
+			continue
 		}
 		fmt.Println("Sent data:", string(data))
 
@@ -188,7 +192,9 @@ func startClient(serverAddr string) {
 		if err != nil {
 			fmt.Println("Error decoding JSON:", err.Error())
 			conn.Close()
-			return
+			// 接收响应失败时进行重试
+			time.Sleep(10 * time.Second)
+			continue
 		}
 		fmt.Println("Received response:", response)
 
@@ -212,7 +218,11 @@ func main() {
 	}
 
 	if isClient {
-		startClient(serverAddr)
+		for {
+			startClient(serverAddr)
+			fmt.Println("Retry connecting to server...")
+			time.Sleep(10 * time.Second)
+		}
 	} else {
 		// 创建一个 HTTP 服务器并注册 API 处理函数
 		http.HandleFunc("/hello", hello)
