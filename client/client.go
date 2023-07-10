@@ -36,10 +36,11 @@ func StartClient(serverAddr string) {
 	}
 
 	systemInfo := getSystemInfo()
+	lastupdated := time.Now().Format("2006-01-02 15:04:05")
 	clientInfo := ClientInfo{
 		LocalIP:     localIP,
 		SystemInfo:  systemInfo,
-		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
+		LastUpdated: lastupdated,
 		Status:      "online",
 	}
 
