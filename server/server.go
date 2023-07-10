@@ -51,6 +51,7 @@ func Hello() http.HandlerFunc {
 	}
 }
 func CheckClientLastUpdated(db *database.SQLiteDB) {
+
 	for {
 		fmt.Println("Checking client status...")
 		time.Sleep(1 * time.Minute) // 每分钟检查一次
@@ -87,6 +88,7 @@ func loadClients(db *database.SQLiteDB) {
 // 启动服务器
 func StartServer(addr string, db *database.SQLiteDB) {
 	loadClients(db)
+	go CheckClientLastUpdated(db)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Println("Error starting server:", err.Error())
