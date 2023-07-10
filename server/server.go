@@ -57,7 +57,9 @@ func CheckClientLastUpdated() {
 
 		for ip, client := range clients {
 			// 检查最后更新时间是否超过2分钟
-			if time.Since(client.LastUpdated) > 2*time.Minute {
+			lastUpdated, _ := time.Parse("2006-01-02 15:04:05", client.LastUpdated)
+
+			if time.Since(lastUpdated) > 2*time.Minute {
 				// 设置客户端状态为离线
 				client.Status = "offline"
 				clients[ip] = client
@@ -110,7 +112,7 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				return
 			}
 			// 更新客户端信息
-			clientInfo.LastUpdated = time.Now()
+			clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 			clients[clientInfo.LocalIP] = clientInfo
 			fmt.Println("Updated client info:", clientInfo)
 

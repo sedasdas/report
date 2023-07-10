@@ -10,10 +10,10 @@ import (
 )
 
 type ClientInfo struct {
-	LocalIP     string    `json:"local_ip"`
-	SystemInfo  string    `json:"system_info"`
-	LastUpdated time.Time `json:"last_updated"`
-	Status      string    `json:"status"`
+	LocalIP     string `json:"local_ip"`
+	SystemInfo  string `json:"system_info"`
+	LastUpdated string `json:"last_updated"`
+	Status      string `json:"status"`
 }
 
 func getSystemInfo() string {
@@ -39,7 +39,7 @@ func StartClient(serverAddr string) {
 	clientInfo := ClientInfo{
 		LocalIP:     localIP,
 		SystemInfo:  systemInfo,
-		LastUpdated: time.Now(),
+		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
 		Status:      "online",
 	}
 
