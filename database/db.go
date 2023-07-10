@@ -30,7 +30,7 @@ func (db *SQLiteDB) CreateClientsTable() error {
 	_, err := db.db.Exec(`CREATE TABLE IF NOT EXISTS clients (
 		local_ip TEXT PRIMARY KEY,
 		system_info TEXT,
-		last_updated TEXT,
+		last_updated TIME,
 		status TEXT
 	)`)
 	if err != nil {
