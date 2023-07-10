@@ -50,6 +50,6 @@ func main() {
 		go http.ListenAndServe(":9999", nil)
 		go server.CheckClientLastUpdated()
 
-		server.StartServer(serverAddr)
+		server.StartServer(serverAddr, db)
 	}
 }
