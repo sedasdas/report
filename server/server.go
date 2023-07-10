@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"report/client"
+	"report/database"
 	"strings"
 	"time"
 )
@@ -67,7 +68,7 @@ func CheckClientLastUpdated() {
 }
 
 // 启动服务器
-func StartServer(addr string) {
+func StartServer(addr string, db *database.SQLiteDB) {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Println("Error starting server:", err.Error())
@@ -103,7 +104,11 @@ func StartServer(addr string) {
 				fmt.Println("Error decoding JSON:", err.Error())
 				return
 			}
-
+			err = db.InsertClientInfo(clientInfo)
+			if err != nil {
+				fmt.Println("insert err :", err.Error())
+				return
+			}
 			// 更新客户端信息
 			clientInfo.LastUpdated = time.Now()
 			clients[clientInfo.LocalIP] = clientInfo
