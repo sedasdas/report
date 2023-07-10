@@ -48,7 +48,7 @@ func main() {
 		http.HandleFunc("/hello", server.Hello())
 		// 启动 HTTP 服务器和客户端状态检查
 		go http.ListenAndServe(":9999", nil)
-		go server.CheckClientLastUpdated()
+		go server.CheckClientLastUpdated(db)
 
 		server.StartServer(serverAddr, db)
 	}

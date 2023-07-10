@@ -50,7 +50,7 @@ func Hello() http.HandlerFunc {
 		}
 	}
 }
-func CheckClientLastUpdated() {
+func CheckClientLastUpdated(db *database.SQLiteDB) {
 	for {
 		fmt.Println("Checking client status...")
 		time.Sleep(1 * time.Minute) // 每分钟检查一次
@@ -64,8 +64,23 @@ func CheckClientLastUpdated() {
 				client.Status = "offline"
 				clients[ip] = client
 				fmt.Println("Set client status to offline:", client)
+				db.UpdateClient(&client)
 			}
 		}
+	}
+}
+
+func loadClients(db *database.SQLiteDB) {
+	// 读取数据库中保存的客户端信息
+	clientList, err := db.GetClients()
+	if err != nil {
+		fmt.Println("Error retrieving clients from database:", err.Error())
+		return
+	}
+
+	// 加载客户端信息到内存中的 clients 映射
+	for _, client := range clientList {
+		clients[client.LocalIP] = client
 	}
 }
 
@@ -106,16 +121,16 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				fmt.Println("Error decoding JSON:", err.Error())
 				return
 			}
+
+			// 更新客户端信息
+			clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
+			clients[clientInfo.LocalIP] = clientInfo
+			fmt.Println("Updated client info:", clientInfo)
 			err = db.InsertClientInfo(clientInfo)
 			if err != nil {
 				fmt.Println("insert error :", err.Error())
 				return
 			}
-			// 更新客户端信息
-			clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
-			clients[clientInfo.LocalIP] = clientInfo
-			fmt.Println("Updated client info:", clientInfo)
-
 			// 发送响应
 			response := map[string]interface{}{
 				"status": "ok",

@@ -2,10 +2,9 @@ package database
 
 import (
 	"database/sql"
+	_ "github.com/mattn/go-sqlite3" // 导入 SQLite3 驱动程序
 	"log"
 	"report/client"
-
-	_ "github.com/mattn/go-sqlite3" // 导入 SQLite3 驱动程序
 )
 
 // SQLiteDB 是一个封装了 SQLite 数据库连接的结构体
@@ -101,4 +100,46 @@ func (db *SQLiteDB) Close() {
 	if err != nil {
 		log.Println("Error closing database:", err)
 	}
+}
+
+// GetClients 从数据库中获取所有客户端信息
+func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
+	query := "SELECT local_ip, system_info, last_updated, status FROM clients"
+
+	rows, err := db.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var clientList []client.ClientInfo
+
+	for rows.Next() {
+		var localIP, systemInfo, lastUpdatedStr, status string
+
+		err := rows.Scan(&localIP, &systemInfo, &lastUpdatedStr, &status)
+		if err != nil {
+			return nil, err
+		}
+
+		//lastUpdated, err := time.Parse("2006-01-02 15:04:05", lastUpdatedStr)
+		if err != nil {
+			return nil, err
+		}
+
+		clientInfo := client.ClientInfo{
+			LocalIP:     localIP,
+			SystemInfo:  systemInfo,
+			LastUpdated: lastUpdatedStr,
+			Status:      status,
+		}
+
+		clientList = append(clientList, clientInfo)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return clientList, nil
 }
