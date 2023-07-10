@@ -126,7 +126,7 @@ func StartServer(addr string, db *database.SQLiteDB) {
 			}
 
 			// 更新客户端信息
-			clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
+			//clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 			clients[clientInfo.LocalIP] = clientInfo
 			fmt.Println("Updated client info:", clientInfo)
 			err = db.InsertClientInfo(clientInfo)
