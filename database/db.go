@@ -93,8 +93,9 @@ func (db *SQLiteDB) GetClientByLocalIP(localIP string) (*client.ClientInfo, erro
 
 // UpdateClient 更新客户信息
 func (db *SQLiteDB) UpdateClient(clientInfo *client.ClientInfo) error {
+	diskInfoJSON, _ := json.Marshal(clientInfo.DiskInfo)
 	_, err := db.db.Exec("UPDATE clients SET system_info = ?, disk_info = ?, last_updated = ?, status = ? WHERE local_ip = ?",
-		clientInfo.SystemInfo, clientInfo.DiskInfo, clientInfo.LastUpdated, clientInfo.Status, clientInfo.LocalIP)
+		clientInfo.SystemInfo, string(diskInfoJSON), clientInfo.LastUpdated, clientInfo.Status, clientInfo.LocalIP)
 	if err != nil {
 		return err
 	}
