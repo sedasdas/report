@@ -12,8 +12,17 @@ import (
 type ClientInfo struct {
 	LocalIP     string `json:"local_ip"`
 	SystemInfo  string `json:"system_info"`
+	DiskInfo    []Disk `json:"disk_info"`
 	LastUpdated string `json:"last_updated"`
 	Status      string `json:"status"`
+}
+
+type Disk struct {
+	Name      string `json:"name"`
+	Size      string `json:"size"`
+	Used      string `json:"used"`
+	Available string `json:"available"`
+	Usage     string `json:"usage"`
 }
 
 func getSystemInfo() string {
@@ -25,7 +34,42 @@ func getSystemInfo() string {
 	return strings.TrimSpace(string(output))
 }
 
-// 启动客户端
+func getDiskInfo() []Disk {
+	cmd := exec.Command("sh", "-c", "df -hl | grep sd")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	disks := make([]Disk, 0, len(lines)-1) // 减去标题行
+
+	for i := 1; i < len(lines); i++ {
+		fields := strings.Fields(lines[i])
+		if len(fields) < 6 {
+			continue
+		}
+
+		size := fields[1]
+		used := fields[2]
+		available := fields[3]
+		usage := fields[4]
+		mountPoint := fields[5]
+
+		disk := Disk{
+			Name:      mountPoint,
+			Size:      size,
+			Used:      used,
+			Available: available,
+			Usage:     usage,
+		}
+
+		disks = append(disks, disk)
+	}
+
+	return disks
+}
+
 func getClientInfo() ClientInfo {
 	localIP := ""
 	cmd := exec.Command("sh", "-c", "ip a | grep inet | grep -v inet6 | awk -F 'inet ' '{print $2}' | awk -F '/' '{print $1}' | grep 10")
@@ -33,20 +77,22 @@ func getClientInfo() ClientInfo {
 	localIP = strings.TrimSpace(string(output))
 	if err == nil && localIP != "" && strings.Contains(localIP, "10") {
 		systemInfo := getSystemInfo()
-		lastupdated := time.Now().Format("2006-01-02 15:04:05")
+		diskInfo := getDiskInfo()
+		lastUpdated := time.Now().Format("2006-01-02 15:04:05")
 		clientInfo := ClientInfo{
 			LocalIP:     localIP,
 			SystemInfo:  systemInfo,
-			LastUpdated: lastupdated,
+			DiskInfo:    diskInfo,
+			LastUpdated: lastUpdated,
 			Status:      "online",
 		}
 		return clientInfo
 	}
 	return ClientInfo{}
 }
+
 func StartClient(serverAddr string) {
 	// 启动客户端
-
 	for {
 		cf := getClientInfo()
 		if cf.LocalIP == "" {

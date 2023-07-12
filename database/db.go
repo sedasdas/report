@@ -29,6 +29,7 @@ func (db *SQLiteDB) CreateClientsTable() error {
 	_, err := db.db.Exec(`CREATE TABLE IF NOT EXISTS clients (
 		local_ip TEXT PRIMARY KEY,
 		system_info TEXT,
+		disk_info TEXT,
 		last_updated TIME,
 		status TEXT
 	)`)
@@ -47,6 +48,7 @@ func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 	}
 	if existingClient != nil {
 		existingClient.SystemInfo = clientInfo.SystemInfo
+		existingClient.DiskInfo = clientInfo.DiskInfo
 		existingClient.LastUpdated = clientInfo.LastUpdated
 		existingClient.Status = clientInfo.Status
 
@@ -58,8 +60,8 @@ func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 		return nil
 	}
 
-	_, err = db.db.Exec("INSERT INTO clients (local_ip, system_info, last_updated, status) VALUES (?, ?, ?, ?)",
-		clientInfo.LocalIP, clientInfo.SystemInfo, clientInfo.LastUpdated, clientInfo.Status)
+	_, err = db.db.Exec("INSERT INTO clients (local_ip, system_info, disk_info, last_updated, status) VALUES (?, ?, ?, ?)",
+		clientInfo.LocalIP, clientInfo.SystemInfo, clientInfo.DiskInfo, clientInfo.LastUpdated, clientInfo.Status)
 	if err != nil {
 		return err
 	}
@@ -69,10 +71,10 @@ func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 
 // GetClientByLocalIP 根据 local_ip 查询客户信息
 func (db *SQLiteDB) GetClientByLocalIP(localIP string) (*client.ClientInfo, error) {
-	row := db.db.QueryRow("SELECT local_ip, system_info, last_updated, status FROM clients WHERE local_ip = ?", localIP)
+	row := db.db.QueryRow("SELECT local_ip, system_info, diskInfo, last_updated, status FROM clients WHERE local_ip = ?", localIP)
 
 	var clientInfo client.ClientInfo
-	err := row.Scan(&clientInfo.LocalIP, &clientInfo.SystemInfo, &clientInfo.LastUpdated, &clientInfo.Status)
+	err := row.Scan(&clientInfo.LocalIP, &clientInfo.SystemInfo, &clientInfo.DiskInfo, &clientInfo.LastUpdated, &clientInfo.Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // 未找到记录
@@ -85,8 +87,8 @@ func (db *SQLiteDB) GetClientByLocalIP(localIP string) (*client.ClientInfo, erro
 
 // UpdateClient 更新客户信息
 func (db *SQLiteDB) UpdateClient(clientInfo *client.ClientInfo) error {
-	_, err := db.db.Exec("UPDATE clients SET system_info = ?, last_updated = ?, status = ? WHERE local_ip = ?",
-		clientInfo.SystemInfo, clientInfo.LastUpdated, clientInfo.Status, clientInfo.LocalIP)
+	_, err := db.db.Exec("UPDATE clients SET system_info = ?, disk_info = ?, last_updated = ?, status = ? WHERE local_ip = ?",
+		clientInfo.SystemInfo, clientInfo.DiskInfo, clientInfo.LastUpdated, clientInfo.Status, clientInfo.LocalIP)
 	if err != nil {
 		return err
 	}
@@ -104,7 +106,7 @@ func (db *SQLiteDB) Close() {
 
 // GetClients 从数据库中获取所有客户端信息
 func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
-	query := "SELECT local_ip, system_info, last_updated, status FROM clients"
+	query := "SELECT local_ip, system_info, disk_info, last_updated, status FROM clients"
 
 	rows, err := db.db.Query(query)
 	if err != nil {
@@ -115,9 +117,9 @@ func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
 	var clientList []client.ClientInfo
 
 	for rows.Next() {
-		var localIP, systemInfo, lastUpdatedStr, status string
+		var localIP, systemInfo, diskInfo, lastUpdatedStr, status string
 
-		err := rows.Scan(&localIP, &systemInfo, &lastUpdatedStr, &status)
+		err := rows.Scan(&localIP, &systemInfo, &diskInfo, &lastUpdatedStr, &status)
 		if err != nil {
 			return nil, err
 		}
@@ -130,6 +132,7 @@ func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
 		clientInfo := client.ClientInfo{
 			LocalIP:     localIP,
 			SystemInfo:  systemInfo,
+			DiskInfo:    client.ClientInfo{}.DiskInfo,
 			LastUpdated: lastUpdatedStr,
 			Status:      status,
 		}
