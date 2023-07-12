@@ -30,8 +30,8 @@ func getClientInfo() ClientInfo {
 	localIP := ""
 	cmd := exec.Command("sh", "-c", "ip a | grep inet | grep -v inet6 | awk -F 'inet ' '{print $2}' | awk -F '/' '{print $1}' | grep 10")
 	output, err := cmd.Output()
+	localIP = strings.TrimSpace(string(output))
 	if err == nil && localIP != "" && strings.Contains(localIP, "10") {
-		localIP = strings.TrimSpace(string(output))
 		systemInfo := getSystemInfo()
 		lastupdated := time.Now().Format("2006-01-02 15:04:05")
 		clientInfo := ClientInfo{
