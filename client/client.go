@@ -26,8 +26,7 @@ func getSystemInfo() string {
 }
 
 // 启动客户端
-func StartClient(serverAddr string) {
-	// 启动客户端
+func getClientInfo() ClientInfo {
 	localIP := ""
 	cmd := exec.Command("sh", "-c", "ip a | grep inet | grep -v inet6 | awk -F 'inet ' '{print $2}' | awk -F '/' '{print $1}' | grep 10")
 	output, err := cmd.Output()
@@ -43,9 +42,14 @@ func StartClient(serverAddr string) {
 		LastUpdated: lastupdated,
 		Status:      "online",
 	}
+	return clientInfo
+}
+func StartClient(serverAddr string) {
+	// 启动客户端
 
 	for {
-		data, err := json.Marshal(clientInfo)
+
+		data, err := json.Marshal(getClientInfo())
 		if err != nil {
 			fmt.Println("Error encoding JSON:", err.Error())
 			return
