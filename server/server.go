@@ -115,7 +115,6 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				return
 			}
 			data = strings.TrimSpace(data) // 去除额外的换行符
-			fmt.Println("Received data:", string(data))
 
 			// 解析客户端信息
 			var clientInfo client.ClientInfo
@@ -124,7 +123,7 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				fmt.Println("Error decoding JSON:", err.Error())
 				return
 			}
-
+			fmt.Println("Received data:", clientInfo)
 			// 更新客户端信息sds
 			clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 			clients[clientInfo.LocalIP] = clientInfo
