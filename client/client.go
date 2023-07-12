@@ -49,9 +49,7 @@ func StartClient(serverAddr string) {
 
 	for {
 		cf := getClientInfo()
-		if cf.LocalIP == "" {
-			return
-		}
+
 		data, err := json.Marshal(cf)
 		if err != nil {
 			fmt.Println("Error encoding JSON:", err.Error())
