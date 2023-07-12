@@ -107,43 +107,46 @@ func StartServer(addr string, db *database.SQLiteDB) {
 		go func() {
 			defer conn.Close()
 
-			// 读取客户端信息
-			reader := bufio.NewReader(conn)
-			data, err := reader.ReadString('\n')
-			if err != nil {
+			scanner := bufio.NewScanner(conn)
+			for scanner.Scan() {
+				data := scanner.Text()
+				data = strings.TrimSpace(data)
+				fmt.Println("Received data:", data)
+
+				// 解析客户端信息
+				var clientInfo client.ClientInfo
+				err = json.Unmarshal([]byte(data), &clientInfo)
+				if err != nil {
+					fmt.Println("Error decoding JSON:", err.Error())
+					return
+				}
+
+				// 更新客户端信息
+				clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
+				clients[clientInfo.LocalIP] = clientInfo
+				fmt.Println("Updated client info:", clientInfo)
+				err = db.InsertClientInfo(clientInfo)
+				if err != nil {
+					fmt.Println("Insert error:", err.Error())
+					return
+				}
+
+				// 发送响应
+				response := map[string]interface{}{
+					"status": "ok",
+				}
+				encoder := json.NewEncoder(conn)
+				err = encoder.Encode(response)
+				if err != nil {
+					fmt.Println("Error encoding JSON:", err.Error())
+					return
+				}
+			}
+			if err == scanner.Err() {
 				fmt.Println("Error reading data:", err.Error())
 				return
 			}
-			data = strings.TrimSpace(data) // 去除额外的换行符
-			fmt.Println("Received data:", data)
 
-			// 解析客户端信息
-			var clientInfo client.ClientInfo
-			err = json.Unmarshal([]byte(data), &clientInfo)
-			if err != nil {
-				fmt.Println("Error decoding JSON:", err.Error())
-				return
-			}
-
-			// 更新客户端信息sds
-			clientInfo.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
-			clients[clientInfo.LocalIP] = clientInfo
-			fmt.Println("Updated client info:", clientInfo)
-			err = db.InsertClientInfo(clientInfo)
-			if err != nil {
-				fmt.Println("insert error :", err.Error())
-				return
-			}
-			// 发送响应
-			response := map[string]interface{}{
-				"status": "ok",
-			}
-			encoder := json.NewEncoder(conn)
-			err = encoder.Encode(response)
-			if err != nil {
-				fmt.Println("Error encoding JSON:", err.Error())
-				return
-			}
 		}()
 	}
 }
