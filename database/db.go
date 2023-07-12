@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	_ "github.com/mattn/go-sqlite3" // 导入 SQLite3 驱动程序
 	"log"
 	"report/client"
@@ -60,8 +61,13 @@ func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 		return nil
 	}
 
-	_, err = db.db.Exec("INSERT INTO clients (local_ip, system_info, disk_info, last_updated, status) VALUES (?, ?, ?, ?)",
-		clientInfo.LocalIP, clientInfo.SystemInfo, clientInfo.DiskInfo, clientInfo.LastUpdated, clientInfo.Status)
+	diskInfoJSON, err := json.Marshal(clientInfo.DiskInfo)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.db.Exec("INSERT INTO clients (local_ip, system_info, disk_info, last_updated, status) VALUES (?, ?, ?, ?, ?)",
+		clientInfo.LocalIP, clientInfo.SystemInfo, string(diskInfoJSON), clientInfo.LastUpdated, clientInfo.Status)
 	if err != nil {
 		return err
 	}
