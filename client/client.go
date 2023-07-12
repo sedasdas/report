@@ -126,7 +126,13 @@ func StartClient(serverAddr string) {
 		decoder := json.NewDecoder(conn)
 		var response map[string]interface{}
 		err = decoder.Decode(&response)
-
+		if err != nil {
+			fmt.Println("Error decoding JSON:", err.Error())
+			conn.Close()
+			// 接收响应失败时进行重试
+			time.Sleep(10 * time.Second)
+			continue
+		}
 		fmt.Println("Received response:", response)
 
 		conn.Close()
