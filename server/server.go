@@ -147,6 +147,7 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				fmt.Println("Error encoding JSON:", err.Error())
 				return
 			}
+			fmt.Println("Res is ", encoder)
 		}()
 	}
 }
