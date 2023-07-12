@@ -3,17 +3,16 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
-	_ "github.com/mattn/go-sqlite3" // 导入 SQLite3 驱动程序
 	"log"
+
+	_ "github.com/mattn/go-sqlite3"
 	"report/client"
 )
 
-// SQLiteDB 是一个封装了 SQLite 数据库连接的结构体
 type SQLiteDB struct {
 	db *sql.DB
 }
 
-// OpenSQLiteDB 打开 SQLite 数据库连接并返回 SQLiteDB 实例
 func OpenSQLiteDB(dbFile string) (*SQLiteDB, error) {
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
@@ -25,7 +24,6 @@ func OpenSQLiteDB(dbFile string) (*SQLiteDB, error) {
 	}, nil
 }
 
-// CreateClientsTable 创建 clients 表格
 func (db *SQLiteDB) CreateClientsTable() error {
 	_, err := db.db.Exec(`CREATE TABLE IF NOT EXISTS clients (
 		local_ip TEXT PRIMARY KEY,
@@ -34,14 +32,9 @@ func (db *SQLiteDB) CreateClientsTable() error {
 		last_updated TIME,
 		status TEXT
 	)`)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
-// InsertClientInfo 将客户信息插入数据库
 func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 	existingClient, err := db.GetClientByLocalIP(clientInfo.LocalIP)
 	if err != nil {
@@ -75,26 +68,34 @@ func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 	return nil
 }
 
-// GetClientByLocalIP 根据 local_ip 查询客户信息
 func (db *SQLiteDB) GetClientByLocalIP(localIP string) (*client.ClientInfo, error) {
 	row := db.db.QueryRow("SELECT local_ip, system_info, disk_info, last_updated, status FROM clients WHERE local_ip = ?", localIP)
 
 	var clientInfo client.ClientInfo
-	err := row.Scan(&clientInfo.LocalIP, &clientInfo.SystemInfo, &clientInfo.DiskInfo, &clientInfo.LastUpdated, &clientInfo.Status)
+	var diskInfoJSON string
+	err := row.Scan(&clientInfo.LocalIP, &clientInfo.SystemInfo, &diskInfoJSON, &clientInfo.LastUpdated, &clientInfo.Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil // 未找到记录
+			return nil, nil
 		}
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(diskInfoJSON), &clientInfo.DiskInfo)
+	if err != nil {
 		return nil, err
 	}
 
 	return &clientInfo, nil
 }
 
-// UpdateClient 更新客户信息
 func (db *SQLiteDB) UpdateClient(clientInfo *client.ClientInfo) error {
-	diskInfoJSON, _ := json.Marshal(clientInfo.DiskInfo)
-	_, err := db.db.Exec("UPDATE clients SET system_info = ?, disk_info = ?, last_updated = ?, status = ? WHERE local_ip = ?",
+	diskInfoJSON, err := json.Marshal(clientInfo.DiskInfo)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.db.Exec("UPDATE clients SET system_info = ?, disk_info = ?, last_updated = ?, status = ? WHERE local_ip = ?",
 		clientInfo.SystemInfo, string(diskInfoJSON), clientInfo.LastUpdated, clientInfo.Status, clientInfo.LocalIP)
 	if err != nil {
 		return err
@@ -103,7 +104,6 @@ func (db *SQLiteDB) UpdateClient(clientInfo *client.ClientInfo) error {
 	return nil
 }
 
-// Close 关闭数据库连接
 func (db *SQLiteDB) Close() {
 	err := db.db.Close()
 	if err != nil {
@@ -111,7 +111,6 @@ func (db *SQLiteDB) Close() {
 	}
 }
 
-// GetClients 从数据库中获取所有客户端信息
 func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
 	query := "SELECT local_ip, system_info, disk_info, last_updated, status FROM clients"
 
@@ -124,14 +123,14 @@ func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
 	var clientList []client.ClientInfo
 
 	for rows.Next() {
-		var localIP, systemInfo, diskInfo, lastUpdatedStr, status string
-
-		err := rows.Scan(&localIP, &systemInfo, &diskInfo, &lastUpdatedStr, &status)
+		var localIP, systemInfo, diskInfoJSON, lastUpdatedStr, status string
+		err := rows.Scan(&localIP, &systemInfo, &diskInfoJSON, &lastUpdatedStr, &status)
 		if err != nil {
 			return nil, err
 		}
 
-		//lastUpdated, err := time.Parse("2006-01-02 15:04:05", lastUpdatedStr)
+		var diskInfo []client.Disk
+		err = json.Unmarshal([]byte(diskInfoJSON), &diskInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +138,7 @@ func (db *SQLiteDB) GetClients() ([]client.ClientInfo, error) {
 		clientInfo := client.ClientInfo{
 			LocalIP:     localIP,
 			SystemInfo:  systemInfo,
-			DiskInfo:    client.ClientInfo{}.DiskInfo,
+			DiskInfo:    diskInfo,
 			LastUpdated: lastUpdatedStr,
 			Status:      status,
 		}
