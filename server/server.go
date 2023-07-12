@@ -114,7 +114,10 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				fmt.Println("Error reading data:", err.Error())
 				return
 			}
-			data = strings.TrimSpace(data) // 去除额外的换行符
+			data = strings.TrimSpace(data)
+			data = strings.ReplaceAll(data, "!", "")
+			data = strings.ReplaceAll(data, "(MISSING)", "")
+			//fmt.Println("Received data:", data)
 			fmt.Println("Received json:", data)
 
 			// 解析客户端信息
