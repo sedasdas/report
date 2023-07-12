@@ -30,26 +30,29 @@ func getClientInfo() ClientInfo {
 	localIP := ""
 	cmd := exec.Command("sh", "-c", "ip a | grep inet | grep -v inet6 | awk -F 'inet ' '{print $2}' | awk -F '/' '{print $1}' | grep 10")
 	output, err := cmd.Output()
-	if err == nil {
+	if err == nil && localIP != "" && strings.Contains(localIP, "10") {
 		localIP = strings.TrimSpace(string(output))
+		systemInfo := getSystemInfo()
+		lastupdated := time.Now().Format("2006-01-02 15:04:05")
+		clientInfo := ClientInfo{
+			LocalIP:     localIP,
+			SystemInfo:  systemInfo,
+			LastUpdated: lastupdated,
+			Status:      "online",
+		}
+		return clientInfo
 	}
-
-	systemInfo := getSystemInfo()
-	lastupdated := time.Now().Format("2006-01-02 15:04:05")
-	clientInfo := ClientInfo{
-		LocalIP:     localIP,
-		SystemInfo:  systemInfo,
-		LastUpdated: lastupdated,
-		Status:      "online",
-	}
-	return clientInfo
+	return ClientInfo{}
 }
 func StartClient(serverAddr string) {
 	// 启动客户端
 
 	for {
-
-		data, err := json.Marshal(getClientInfo())
+		cf := getClientInfo()
+		if cf.LocalIP == "" {
+			return
+		}
+		data, err := json.Marshal(cf)
 		if err != nil {
 			fmt.Println("Error encoding JSON:", err.Error())
 			return
