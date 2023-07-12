@@ -71,7 +71,7 @@ func (db *SQLiteDB) InsertClientInfo(clientInfo client.ClientInfo) error {
 
 // GetClientByLocalIP 根据 local_ip 查询客户信息
 func (db *SQLiteDB) GetClientByLocalIP(localIP string) (*client.ClientInfo, error) {
-	row := db.db.QueryRow("SELECT local_ip, system_info, diskInfo, last_updated, status FROM clients WHERE local_ip = ?", localIP)
+	row := db.db.QueryRow("SELECT local_ip, system_info, disk_info, last_updated, status FROM clients WHERE local_ip = ?", localIP)
 
 	var clientInfo client.ClientInfo
 	err := row.Scan(&clientInfo.LocalIP, &clientInfo.SystemInfo, &clientInfo.DiskInfo, &clientInfo.LastUpdated, &clientInfo.Status)
