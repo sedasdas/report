@@ -115,6 +115,7 @@ func StartServer(addr string, db *database.SQLiteDB) {
 				return
 			}
 			data = strings.TrimSpace(data) // 去除额外的换行符
+			fmt.Println("Received json:", data)
 
 			// 解析客户端信息
 			var clientInfo client.ClientInfo
